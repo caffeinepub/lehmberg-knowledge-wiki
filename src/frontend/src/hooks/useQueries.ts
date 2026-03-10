@@ -2,6 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { WikiPage } from "../backend.d";
 import { useActor } from "./useActor";
 
+export interface WikiDraft {
+  key: string;
+  title: string;
+  body: string;
+  tags: string[];
+  savedAt: bigint;
+}
+
 export function useListPages() {
   const { actor, isFetching } = useActor();
   return useQuery<WikiPage[]>({
@@ -35,18 +43,6 @@ export function useGetPagesByTag(tag: string) {
       return actor.getPagesByTag(tag);
     },
     enabled: !!actor && !isFetching && !!tag,
-  });
-}
-
-export function useIsAdmin() {
-  const { actor, isFetching } = useActor();
-  return useQuery<boolean>({
-    queryKey: ["is-admin"],
-    queryFn: async () => {
-      if (!actor) return false;
-      return actor.isCallerAdmin();
-    },
-    enabled: !!actor && !isFetching,
   });
 }
 
@@ -119,6 +115,59 @@ export function useInitialize() {
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
       return actor.initialize();
+    },
+  });
+}
+
+export function useGetDraft(key: string) {
+  const { actor, isFetching } = useActor();
+  return useQuery<WikiDraft | null>({
+    queryKey: ["draft", key],
+    queryFn: async () => {
+      if (!actor) return null;
+      const result = await (actor as any).getDraft(key);
+      // Motoko optional: [] | [WikiDraft]
+      return result[0] ?? null;
+    },
+    enabled: !!actor && !isFetching,
+    staleTime: 0,
+  });
+}
+
+export function useSaveDraft() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      key,
+      title,
+      body,
+      tags,
+    }: {
+      key: string;
+      title: string;
+      body: string;
+      tags: string[];
+    }) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).saveDraft(key, title, body, tags);
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["draft", variables.key] });
+    },
+  });
+}
+
+export function useDeleteDraft() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (key: string) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).deleteDraft(key);
+    },
+    onSuccess: (_data, key) => {
+      queryClient.invalidateQueries({ queryKey: ["draft", key] });
     },
   });
 }

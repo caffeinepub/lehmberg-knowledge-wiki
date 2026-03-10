@@ -6,11 +6,25 @@ interface BodyRendererProps {
   pages: WikiPage[];
 }
 
+/** Inject target="_blank" on all external links in raw HTML string. */
+function addTargetBlank(html: string): string {
+  return html.replace(
+    /<a\s([^>]*href="(?!(\/page-link\/|#))[^"]*")[^>]*>/gi,
+    (match) => {
+      if (/target=/i.test(match)) return match;
+      return match.replace(
+        "<a ",
+        '<a target="_blank" rel="noopener noreferrer" ',
+      );
+    },
+  );
+}
+
 const WikiHtml = ({ html }: { html: string }) => (
   <div
     className="wiki-body ql-editor ql-view"
     // biome-ignore lint/security/noDangerouslySetInnerHtml: personal wiki, user-authored content
-    dangerouslySetInnerHTML={{ __html: html }}
+    dangerouslySetInnerHTML={{ __html: addTargetBlank(html) }}
   />
 );
 
@@ -43,6 +57,7 @@ export function BodyRenderer({ body, pages }: BodyRendererProps) {
         navigate({ to: "/page/$id", params: { id: id.toString() } });
       }
     }
+    // External links: browser handles target="_blank" natively via the injected attribute.
   };
 
   return (

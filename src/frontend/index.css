@@ -307,3 +307,42 @@
 .ql-view .ql-align-center { text-align: center; }
 .ql-view .ql-align-right { text-align: right; }
 .ql-view .ql-align-justify { text-align: justify; }
+
+/* List styles for both editor and view mode */
+.ql-view ul,
+.ql-editor ul {
+  list-style-type: disc;
+  padding-left: 1.75em;
+  margin-bottom: 1em;
+}
+
+.ql-view ol,
+.ql-editor ol {
+  list-style-type: decimal;
+  padding-left: 1.75em;
+  margin-bottom: 1em;
+}
+
+.ql-view ul li,
+.ql-editor ul li,
+.ql-view ol li,
+.ql-editor ol li {
+  margin-bottom: 0.25em;
+  padding-left: 0.25em;
+}
+
+/* Quill uses data-list attribute on li elements */
+.ql-view li[data-list="bullet"],
+.ql-editor li[data-list="bullet"] {
+  list-style-type: disc;
+}
+
+.ql-view li[data-list="ordered"],
+.ql-editor li[data-list="ordered"] {
+  list-style-type: decimal;
+}
+
+.ql-view .ql-ui,
+.ql-editor .ql-ui {
+  display: none;
+}

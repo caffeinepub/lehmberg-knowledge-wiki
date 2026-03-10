@@ -16,8 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import {
+  useDeleteDraft,
   useDeletePage,
+  useGetDraft,
   useGetPage,
   useListPages,
   useUpdatePage,
@@ -33,7 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const SECTION_DELIMITER = "\n---\n";
@@ -85,33 +88,76 @@ export function WikiPageView() {
 
   const updatePage = useUpdatePage();
   const deletePage = useDeletePage();
+  const deleteDraft = useDeleteDraft();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editSections, setEditSections] = useState<Section[]>([]);
   const [editTags, setEditTags] = useState("");
+  const editMountedRef = useRef(false);
+
+  const draftKey = pageId.toString();
+  const { data: draft, isSuccess: draftLoaded } = useGetDraft(draftKey);
 
   const handleEditStart = () => {
     if (!page) return;
+    editMountedRef.current = false;
     setEditTitle(page.title);
     setEditSections(bodyToSections(page.body));
     setEditTags(page.tags.join(" "));
     setIsEditing(true);
   };
 
-  const handleCancel = () => setIsEditing(false);
+  // When editing starts and draft is loaded, optionally restore newer draft
+  useEffect(() => {
+    if (!isEditing || !draftLoaded || editMountedRef.current) return;
+    editMountedRef.current = true;
+
+    if (draft && page) {
+      const draftTime = Number(draft.savedAt);
+      const pageTime = Number(page.updatedAt);
+      if (draftTime > pageTime) {
+        setEditTitle(draft.title);
+        setEditTags(draft.tags.join(" "));
+        setEditSections(bodyToSections(draft.body));
+        toast("Draft restored", {
+          description: "A newer unsaved draft was restored.",
+        });
+      }
+    }
+  }, [isEditing, draftLoaded, draft, page]);
+
+  const editBody = editSections.map(sectionToString).join(SECTION_DELIMITER);
+
+  const { status: draftStatus } = useAutoSaveDraft({
+    key: draftKey,
+    title: editTitle,
+    body: editBody,
+    tags: editTags,
+    enabled: isEditing && editMountedRef.current,
+  });
+
+  const handleCancel = () => {
+    editMountedRef.current = false;
+    setIsEditing(false);
+  };
 
   const handleSave = async () => {
     if (!page) return;
     const tags = parseTags(editTags);
-    const body = editSections.map(sectionToString).join(SECTION_DELIMITER);
     try {
       await updatePage.mutateAsync({
         id: page.id,
         title: editTitle.trim(),
-        body,
+        body: editBody,
         tags,
       });
+      try {
+        await deleteDraft.mutateAsync(draftKey);
+      } catch {
+        // silently ignore
+      }
+      editMountedRef.current = false;
       setIsEditing(false);
       toast.success("Page saved");
     } catch {
@@ -234,7 +280,7 @@ export function WikiPageView() {
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               className="font-serif text-2xl h-auto py-2 bg-card border-border"
-              data-ocid="page.title_input"
+              data-ocid="page.input"
             />
           </div>
 
@@ -263,7 +309,6 @@ export function WikiPageView() {
                   }
                   placeholder="Section name (optional)"
                   className="font-body text-sm bg-muted/50 border-border mb-1.5"
-                  data-ocid={`page.section_name_input.${idx + 1}`}
                 />
                 <RichTextEditor
                   value={section.text}
@@ -271,7 +316,7 @@ export function WikiPageView() {
                   placeholder={
                     idx === 0 ? "Start writing..." : "New section..."
                   }
-                  data-ocid={`page.section_editor.${idx + 1}`}
+                  data-ocid="page.editor"
                 />
                 <div className="flex justify-center py-2">
                   <button
@@ -279,7 +324,6 @@ export function WikiPageView() {
                     onClick={() => addSection(idx)}
                     className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs text-muted-foreground border border-dashed border-border hover:border-primary/50 hover:text-primary bg-transparent hover:bg-primary/5 transition-all"
                     title="Add section below"
-                    data-ocid={`page.section_add_button.${idx + 1}`}
                   >
                     <Plus className="w-3 h-3" />
                     Add section
@@ -305,7 +349,7 @@ export function WikiPageView() {
               onChange={(e) => setEditTags(e.target.value)}
               placeholder="#clay #soil #water-retention"
               className="font-body bg-card border-border"
-              data-ocid="page.tags_input"
+              data-ocid="page.input"
             />
           </div>
           <div className="flex items-center gap-3 pt-2">
@@ -330,6 +374,22 @@ export function WikiPageView() {
             >
               <X className="w-4 h-4" /> Cancel
             </Button>
+            {draftStatus === "saving" && (
+              <span
+                className="text-xs text-muted-foreground italic"
+                data-ocid="page.loading_state"
+              >
+                Saving draft...
+              </span>
+            )}
+            {draftStatus === "saved" && (
+              <span
+                className="text-xs text-muted-foreground italic"
+                data-ocid="page.success_state"
+              >
+                Draft saved
+              </span>
+            )}
           </div>
         </motion.div>
       ) : (
@@ -392,9 +452,6 @@ export function WikiPageView() {
               </AlertDialog>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground font-body mb-8 italic">
-            Last updated {updatedDate}
-          </p>
           <div className="mb-8 space-y-6">
             {viewSections.map((section, idx) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: view-only list
@@ -425,6 +482,9 @@ export function WikiPageView() {
               </div>
             </div>
           )}
+          <p className="text-xs text-muted-foreground font-body mt-10 text-center italic">
+            Last updated {updatedDate}
+          </p>
         </motion.div>
       )}
     </main>

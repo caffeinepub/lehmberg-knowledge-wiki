@@ -1,6 +1,7 @@
 import { TagBadge } from "@/components/TagBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListPages } from "@/hooks/useQueries";
+import { stripToPlainText } from "@/lib/stripToPlainText";
 import { Link } from "@tanstack/react-router";
 import { Sprout } from "lucide-react";
 import { motion } from "motion/react";
@@ -46,24 +47,13 @@ export function IndexPage() {
         </div>
       )}
 
-      {isError && (
-        <div
-          className="p-5 border border-destructive/30 rounded-lg bg-destructive/5 text-destructive"
-          data-ocid="pages.error_state"
-        >
-          <p className="font-body">Failed to load pages. Please try again.</p>
-        </div>
-      )}
-
-      {!isLoading && !isError && pages && pages.length === 0 && (
+      {!isLoading && (isError || (pages && pages.length === 0)) && (
         <div
           className="text-center py-16 text-muted-foreground"
           data-ocid="pages.empty_state"
         >
           <Sprout className="w-10 h-10 mx-auto mb-4 opacity-40" />
-          <p className="font-body text-lg italic">
-            The wiki is empty. Start by creating the first entry.
-          </p>
+          <p className="font-body text-lg italic">No pages exist yet.</p>
         </div>
       )}
 
@@ -87,9 +77,7 @@ export function IndexPage() {
                 </h2>
                 {page.body && (
                   <p className="text-muted-foreground font-body text-sm line-clamp-2 mb-3">
-                    {page.body
-                      .replace(/\[\[[^\]]+\]\]/g, (m) => m.slice(2, -2))
-                      .replace(/#[\w-]+/g, "")}
+                    {stripToPlainText(page.body)}
                   </p>
                 )}
                 {page.tags.length > 0 && (

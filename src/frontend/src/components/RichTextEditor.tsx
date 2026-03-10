@@ -24,13 +24,14 @@ const MODULES_BASE = {
     container: [
       [{ align: ["", "center", "right", "justify"] }],
       ["bold", "italic", "underline"],
+      [{ list: "ordered" }, { list: "bullet" }],
       ["link"],
       ["clean"],
     ],
   },
 };
 
-const FORMATS = ["align", "bold", "italic", "underline", "link"];
+const FORMATS = ["align", "bold", "italic", "underline", "list", "link"];
 
 export function RichTextEditor({
   value,

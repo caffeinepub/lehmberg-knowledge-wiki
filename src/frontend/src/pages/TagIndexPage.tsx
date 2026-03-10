@@ -1,6 +1,7 @@
 import { TagBadge } from "@/components/TagBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetPagesByTag } from "@/hooks/useQueries";
+import { stripToPlainText } from "@/lib/stripToPlainText";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Tag } from "lucide-react";
 import { motion } from "motion/react";
@@ -96,9 +97,7 @@ export function TagIndexPage() {
                   </h2>
                   {page.body && (
                     <p className="text-muted-foreground font-body text-sm line-clamp-2 mb-3">
-                      {page.body
-                        .replace(/\[\[[^\]]+\]\]/g, (m) => m.slice(2, -2))
-                        .replace(/#[\w-]+/g, "")}
+                      {stripToPlainText(page.body)}
                     </p>
                   )}
                   {page.tags.length > 0 && (
