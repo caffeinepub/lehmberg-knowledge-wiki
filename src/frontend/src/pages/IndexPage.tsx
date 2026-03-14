@@ -1,7 +1,7 @@
-import { TagBadge } from "@/components/TagBadge";
+import { RichPreview } from "@/components/RichPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListPages } from "@/hooks/useQueries";
-import { stripToPlainText } from "@/lib/stripToPlainText";
+import { toRichPreviewHtml } from "@/lib/richPreview";
 import { Link } from "@tanstack/react-router";
 import { Sprout } from "lucide-react";
 import { motion } from "motion/react";
@@ -14,7 +14,7 @@ export function IndexPage() {
       {/* Hero banner */}
       <div className="mb-10 overflow-hidden rounded-lg">
         <img
-          src="/assets/generated/lehmberg-banner.dim_1200x200.jpg"
+          src="/assets/uploads/204351-678x450-Cottonwood-Tree-in-Autumn-1.jpg"
           alt="Lehmberg farmstead landscape"
           className="w-full h-32 sm:h-48 object-cover"
         />
@@ -76,9 +76,10 @@ export function IndexPage() {
                   {page.title}
                 </h2>
                 {page.body && (
-                  <p className="text-muted-foreground font-body text-sm line-clamp-2 mb-3">
-                    {stripToPlainText(page.body)}
-                  </p>
+                  <RichPreview
+                    html={toRichPreviewHtml(page.body)}
+                    className="text-muted-foreground font-body text-sm mb-3"
+                  />
                 )}
                 {page.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">

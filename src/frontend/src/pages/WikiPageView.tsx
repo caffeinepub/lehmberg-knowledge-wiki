@@ -1,4 +1,5 @@
 import { BodyRenderer } from "@/components/BodyRenderer";
+import { LoginDialog } from "@/components/LoginDialog";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { TagBadge } from "@/components/TagBadge";
 import {
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import {
   useDeleteDraft,
   useDeletePage,
@@ -82,6 +84,8 @@ export function WikiPageView() {
   const { id } = useParams({ from: "/page/$id" });
   const navigate = useNavigate();
   const pageId = BigInt(id);
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
   const { data: page, isLoading, isError } = useGetPage(pageId);
   const { data: allPages = [] } = useListPages();
@@ -94,18 +98,29 @@ export function WikiPageView() {
   const [editTitle, setEditTitle] = useState("");
   const [editSections, setEditSections] = useState<Section[]>([]);
   const [editTags, setEditTags] = useState("");
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const editMountedRef = useRef(false);
 
   const draftKey = pageId.toString();
   const { data: draft, isSuccess: draftLoaded } = useGetDraft(draftKey);
 
   const handleEditStart = () => {
+    if (!isAuthenticated) {
+      setLoginDialogOpen(true);
+      return;
+    }
     if (!page) return;
     editMountedRef.current = false;
     setEditTitle(page.title);
     setEditSections(bodyToSections(page.body));
     setEditTags(page.tags.join(" "));
     setIsEditing(true);
+  };
+
+  const handleDeleteClick = () => {
+    if (!isAuthenticated) {
+      setLoginDialogOpen(true);
+    }
   };
 
   // When editing starts and draft is loaded, optionally restore newer draft
@@ -308,7 +323,7 @@ export function WikiPageView() {
                     updateSection(section.id, "name", e.target.value)
                   }
                   placeholder="Section name (optional)"
-                  className="font-body text-sm bg-muted/50 border-border mb-1.5"
+                  className="font-serif text-base bg-muted/50 border-border mb-1.5"
                 />
                 <RichTextEditor
                   value={section.text}
@@ -412,44 +427,56 @@ export function WikiPageView() {
               >
                 <Pencil className="w-3.5 h-3.5" /> Edit
               </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 font-body text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
-                    data-ocid="page.delete_button"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent data-ocid="confirm.dialog">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="font-serif">
-                      Delete this page?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription className="font-body">
-                      This will permanently delete &ldquo;{page.title}&rdquo;.
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel
-                      className="font-body"
-                      data-ocid="confirm.cancel_button"
+              {isAuthenticated ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 font-body text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
+                      data-ocid="page.delete_button"
                     >
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDelete}
-                      className="font-body bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      data-ocid="confirm.confirm_button"
-                    >
-                      {deletePage.isPending ? "Deleting..." : "Delete"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                      <Trash2 className="w-3.5 h-3.5" /> Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent data-ocid="confirm.dialog">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="font-serif">
+                        Delete this page?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription className="font-body">
+                        This will permanently delete &ldquo;{page.title}&rdquo;.
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel
+                        className="font-body"
+                        data-ocid="confirm.cancel_button"
+                      >
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        className="font-body bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        data-ocid="confirm.confirm_button"
+                      >
+                        {deletePage.isPending ? "Deleting..." : "Delete"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteClick}
+                  className="gap-1.5 font-body text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50"
+                  data-ocid="page.delete_button"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </Button>
+              )}
             </div>
           </div>
           <div className="mb-8 space-y-6">
@@ -458,7 +485,7 @@ export function WikiPageView() {
               <div key={idx}>
                 {idx > 0 && <hr className="border-border mb-6" />}
                 {section.name && (
-                  <h2 className="font-serif text-xl text-foreground mb-3">
+                  <h2 className="font-serif text-2xl text-foreground mb-4">
                     {section.name}
                   </h2>
                 )}
@@ -487,6 +514,8 @@ export function WikiPageView() {
           </p>
         </motion.div>
       )}
+
+      <LoginDialog open={loginDialogOpen} onOpenChange={setLoginDialogOpen} />
     </main>
   );
 }

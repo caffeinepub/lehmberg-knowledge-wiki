@@ -204,6 +204,81 @@
   }
 }
 
+/* ─── Rich Preview (entry card snippets) ──────────────────────────────────── */
+
+.rich-preview {
+  font-family: "Crimson Pro", Georgia, serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  /* Clamp to ~4 lines to accommodate section names */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rich-preview strong,
+.rich-preview b {
+  font-weight: 600;
+}
+
+.rich-preview em,
+.rich-preview i {
+  font-style: italic;
+}
+
+.rich-preview u {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rich-preview ul {
+  list-style-type: disc;
+  padding-left: 1.4em;
+  margin: 0.25em 0;
+}
+
+.rich-preview ol {
+  list-style-type: decimal;
+  padding-left: 1.4em;
+  margin: 0.25em 0;
+}
+
+.rich-preview li {
+  margin-bottom: 0.1em;
+}
+
+/* Quill data-list bullet items in preview */
+.rich-preview li[data-list="bullet"] {
+  list-style-type: disc;
+}
+
+.rich-preview li[data-list="ordered"] {
+  list-style-type: decimal;
+}
+
+/* Hide Quill UI pseudo-elements in preview */
+.rich-preview .ql-ui {
+  display: none;
+}
+
+/* Section name headings in preview cards */
+.rich-preview h3.preview-section-name {
+  display: block;
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.3;
+  color: oklch(0.28 0.04 55);
+  margin-top: 0.5em;
+  margin-bottom: 0.35em;
+}
+
+.rich-preview .preview-section-body {
+  display: block;
+  margin-top: 0.35em;
+}
+
 /* ─── Quill Rich Text Editor overrides ─────────────────────────────────────── */
 
 .rich-editor-wrapper .ql-toolbar.ql-snow {
@@ -345,4 +420,21 @@
 .ql-view .ql-ui,
 .ql-editor .ql-ui {
   display: none;
+}
+
+/* ─── Image float clearfix ─────────────────────────────────────────────────── */
+
+.wiki-body::after,
+.ql-view::after,
+.ql-editor::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Images in view mode */
+.ql-view img,
+.wiki-body img {
+  max-width: 100%;
+  height: auto;
 }

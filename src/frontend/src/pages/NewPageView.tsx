@@ -1,9 +1,11 @@
+import { LoginDialog } from "@/components/LoginDialog";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useActor } from "@/hooks/useActor";
 import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
+import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useCreatePage, useDeleteDraft, useGetDraft } from "@/hooks/useQueries";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2, Plus, Save, X } from "lucide-react";
@@ -47,6 +49,8 @@ export function NewPageView() {
   const createPage = useCreatePage();
   const deleteDraft = useDeleteDraft();
   const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
+  const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
   const [title, setTitle] = useState("");
   const [sections, setSections] = useState<Section[]>(() => [
@@ -54,6 +58,7 @@ export function NewPageView() {
   ]);
   const [tags, setTags] = useState("");
   const [titleError, setTitleError] = useState("");
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const restoredRef = useRef(false);
 
   // Load draft on mount
@@ -112,6 +117,10 @@ export function NewPageView() {
   const handleSubmit = async () => {
     if (!title.trim()) {
       setTitleError("Title is required");
+      return;
+    }
+    if (!isAuthenticated) {
+      setLoginDialogOpen(true);
       return;
     }
     if (!actor) {
@@ -302,6 +311,12 @@ export function NewPageView() {
           )}
         </div>
       </motion.div>
+
+      <LoginDialog
+        open={loginDialogOpen}
+        onOpenChange={setLoginDialogOpen}
+        data-ocid="new_page.login_dialog"
+      />
     </main>
   );
 }

@@ -5,6 +5,7 @@ import Int "mo:core/Int";
 import Order "mo:core/Order";
 import Time "mo:core/Time";
 import Principal "mo:core/Principal";
+import Error "mo:core/Error";
 import AccessControl "authorization/access-control";
 
 actor {
@@ -34,10 +35,33 @@ actor {
   // Kept to satisfy stable variable compatibility with previous version
   let accessControlState = AccessControl.initState();
 
+  var stablePages : [(Nat, WikiPage)] = [];
+  var stableNextId : Nat = 1;
+  var stableDrafts : [(Text, WikiDraft)] = [];
+
   let pages = Map.empty<Nat, WikiPage>();
   var nextId = 1;
-
   let drafts = Map.empty<Text, WikiDraft>();
+
+  // Restore from stable storage on upgrade
+  system func postupgrade() {
+    for ((k, v) in stablePages.vals()) {
+      pages.add(k, v);
+    };
+    nextId := stableNextId;
+    for ((k, v) in stableDrafts.vals()) {
+      drafts.add(k, v);
+    };
+    stablePages := [];
+    stableDrafts := [];
+  };
+
+  // Persist to stable storage before upgrade
+  system func preupgrade() {
+    stablePages := pages.entries().toArray();
+    stableNextId := nextId;
+    stableDrafts := drafts.entries().toArray();
+  };
 
   // Returns true if a page with this title already exists (optionally excluding a specific id)
   func titleExists(title : Text, excludeId : ?Nat) : Bool {
@@ -54,9 +78,12 @@ actor {
     false;
   };
 
-  public shared func createPage(title : Text, body : Text, tags : [Text]) : async Nat {
+  public shared ({ caller }) func createPage(title : Text, body : Text, tags : [Text]) : async Nat {
+    if (caller.isAnonymous()) {
+      throw Error.reject("Authentication required. Please log in to make changes.");
+    };
     if (titleExists(title, null)) {
-      throw (Error.reject("An entry with the title \"" # title # "\" already exists."));
+      throw Error.reject("An entry with the title \"" # title # "\" already exists.");
     };
     let id = nextId;
     nextId += 1;
@@ -70,12 +97,15 @@ actor {
     pages.get(id);
   };
 
-  public shared func updatePage(id : Nat, title : Text, body : Text, tags : [Text]) : async Bool {
+  public shared ({ caller }) func updatePage(id : Nat, title : Text, body : Text, tags : [Text]) : async Bool {
+    if (caller.isAnonymous()) {
+      throw Error.reject("Authentication required. Please log in to make changes.");
+    };
     switch (pages.get(id)) {
       case (null) { false };
       case (?existingPage) {
         if (titleExists(title, ?id)) {
-          throw (Error.reject("An entry with the title \"" # title # "\" already exists."));
+          throw Error.reject("An entry with the title \"" # title # "\" already exists.");
         };
         let updatedPage : WikiPage = {
           existingPage with
@@ -90,7 +120,10 @@ actor {
     };
   };
 
-  public shared func deletePage(id : Nat) : async Bool {
+  public shared ({ caller }) func deletePage(id : Nat) : async Bool {
+    if (caller.isAnonymous()) {
+      throw Error.reject("Authentication required. Please log in to make changes.");
+    };
     switch (pages.get(id)) {
       case (null) { false };
       case (?_) {
@@ -116,7 +149,7 @@ actor {
     pages.values().find(func(page) { Text.equal(page.title, title) });
   };
 
-  // Draft functions
+  // Draft functions — allow anonymous saves so drafts work before login
   public shared func saveDraft(key : Text, title : Text, body : Text, tags : [Text]) : async () {
     let draft : WikiDraft = { key; title; body; tags; savedAt = Time.now() };
     drafts.add(key, draft);
@@ -133,7 +166,7 @@ actor {
   // Removes duplicate pages (same title, case-insensitive), keeping the one with the lowest id.
   public shared func deduplicatePages() : async Nat {
     var removed = 0;
-    let seen = Map.empty<Text, Nat>(); // normalised title -> first id seen
+    let seen = Map.empty<Text, Nat>();
     let allSorted = pages.values().toArray().sort();
     for (page in allSorted.vals()) {
       let key = page.title.toLower();
@@ -148,7 +181,6 @@ actor {
     removed;
   };
 
-  // Initialises and cleans up duplicates.
   public shared func initialize() : async () {
     ignore await deduplicatePages();
   };
