@@ -20,11 +20,34 @@ function addTargetBlank(html: string): string {
   );
 }
 
+/** Extract YouTube video ID from a URL string. */
+function extractYouTubeId(url: string): string | null {
+  // youtu.be/ID
+  const shortMatch = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+  if (shortMatch) return shortMatch[1];
+  // youtube.com/watch?v=ID
+  const longMatch = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+  if (longMatch) return longMatch[1];
+  return null;
+}
+
+/** Replace anchor tags pointing to YouTube URLs with embedded video players. */
+function embedYouTube(html: string): string {
+  return html.replace(
+    /<a\s[^>]*href="([^"]*(?:youtube\.com\/watch|youtu\.be\/)[^"]*)[^>]*>[^<]*<\/a>/gi,
+    (match, url: string) => {
+      const videoId = extractYouTubeId(url);
+      if (!videoId) return match;
+      return `<div class="yt-embed-wrapper" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;margin:1rem 0;"><iframe src="https://www.youtube.com/embed/${videoId}" style="position:absolute;top:0;left:0;width:100%;height:100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen title="YouTube video"></iframe></div>`;
+    },
+  );
+}
+
 const WikiHtml = ({ html }: { html: string }) => (
   <div
     className="wiki-body ql-editor ql-view"
     // biome-ignore lint/security/noDangerouslySetInnerHtml: personal wiki, user-authored content
-    dangerouslySetInnerHTML={{ __html: addTargetBlank(html) }}
+    dangerouslySetInnerHTML={{ __html: embedYouTube(addTargetBlank(html)) }}
   />
 );
 
