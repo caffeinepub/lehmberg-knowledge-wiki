@@ -1,12 +1,13 @@
+import { titleToSlug } from "@/lib/slug";
 import { useNavigate } from "@tanstack/react-router";
 import type { WikiPage } from "../backend.d";
 
 interface BodyRendererProps {
   body: string;
   pages: WikiPage[];
+  className?: string;
 }
 
-/** Inject target="_blank" on all external links in raw HTML string. */
 function addTargetBlank(html: string): string {
   return html.replace(
     /<a\s([^>]*href="(?!(\/page-link\/|#))[^"]*")[^>]*>/gi,
@@ -20,18 +21,14 @@ function addTargetBlank(html: string): string {
   );
 }
 
-/** Extract YouTube video ID from a URL string. */
 function extractYouTubeId(url: string): string | null {
-  // youtu.be/ID
   const shortMatch = url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
   if (shortMatch) return shortMatch[1];
-  // youtube.com/watch?v=ID
   const longMatch = url.match(/[?&]v=([A-Za-z0-9_-]{11})/);
   if (longMatch) return longMatch[1];
   return null;
 }
 
-/** Replace anchor tags pointing to YouTube URLs with embedded video players. */
 function embedYouTube(html: string): string {
   return html.replace(
     /<a\s[^>]*href="([^"]*(?:youtube\.com\/watch|youtu\.be\/)[^"]*)[^>]*>[^<]*<\/a>/gi,
@@ -43,15 +40,18 @@ function embedYouTube(html: string): string {
   );
 }
 
-const WikiHtml = ({ html }: { html: string }) => (
+const WikiHtml = ({
+  html,
+  className,
+}: { html: string; className?: string }) => (
   <div
-    className="wiki-body ql-editor ql-view"
+    className={`wiki-body ql-editor ql-view wiki-entry-body ${className ?? ""}`}
     // biome-ignore lint/security/noDangerouslySetInnerHtml: personal wiki, user-authored content
     dangerouslySetInnerHTML={{ __html: embedYouTube(addTargetBlank(html)) }}
   />
 );
 
-export function BodyRenderer({ body, pages }: BodyRendererProps) {
+export function BodyRenderer({ body, pages, className }: BodyRendererProps) {
   const navigate = useNavigate();
 
   if (!body || body.trim() === "" || body.trim() === "<p><br></p>") {
@@ -62,9 +62,9 @@ export function BodyRenderer({ body, pages }: BodyRendererProps) {
     );
   }
 
-  const pageMap = new Map<string, bigint>();
+  const pageMap = new Map<string, string>();
   for (const page of pages) {
-    pageMap.set(page.title.toLowerCase().trim(), page.id);
+    pageMap.set(page.title.toLowerCase().trim(), page.title);
   }
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -75,18 +75,20 @@ export function BodyRenderer({ body, pages }: BodyRendererProps) {
     if (href.startsWith("/page-link/")) {
       e.preventDefault();
       const title = decodeURIComponent(href.slice("/page-link/".length));
-      const id = pageMap.get(title.toLowerCase().trim());
-      if (id !== undefined) {
-        navigate({ to: "/page/$id", params: { id: id.toString() } });
+      const canonicalTitle = pageMap.get(title.toLowerCase().trim());
+      if (canonicalTitle) {
+        navigate({
+          to: "/page/$slug",
+          params: { slug: titleToSlug(canonicalTitle) },
+        });
       }
     }
-    // External links: browser handles target="_blank" natively via the injected attribute.
   };
 
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: link interception within rendered HTML
     <div onClick={handleClick}>
-      <WikiHtml html={body} />
+      <WikiHtml html={body} className={className} />
     </div>
   );
 }

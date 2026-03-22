@@ -34,6 +34,20 @@ export function useGetPage(id: bigint | null) {
   });
 }
 
+export function useGetPageByTitle(title: string | null) {
+  const { actor, isFetching } = useActor();
+  return useQuery<WikiPage | null>({
+    queryKey: ["page-by-title", title],
+    queryFn: async () => {
+      if (!actor || !title) return null;
+      const result = await actor.getPageByTitle(title);
+      // Motoko optional: [] | [WikiPage]
+      return (result as unknown as WikiPage[])[0] ?? null;
+    },
+    enabled: !!actor && !isFetching && !!title,
+  });
+}
+
 export function useGetPagesByTag(tag: string) {
   const { actor, isFetching } = useActor();
   return useQuery<WikiPage[]>({
@@ -91,6 +105,7 @@ export function useUpdatePage() {
       queryClient.invalidateQueries({
         queryKey: ["page", variables.id.toString()],
       });
+      queryClient.invalidateQueries({ queryKey: ["page-by-title"] });
     },
   });
 }
@@ -126,7 +141,6 @@ export function useGetDraft(key: string) {
     queryFn: async () => {
       if (!actor) return null;
       const result = await (actor as any).getDraft(key);
-      // Motoko optional: [] | [WikiDraft]
       return result[0] ?? null;
     },
     enabled: !!actor && !isFetching,

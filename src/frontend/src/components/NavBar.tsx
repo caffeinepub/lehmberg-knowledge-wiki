@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpen, LogIn, LogOut, Plus, Sprout } from "lucide-react";
+import { BookOpen, LogIn, LogOut, Plus, Settings, Sprout } from "lucide-react";
 
 export function NavBar() {
   const navigate = useNavigate();
@@ -73,6 +73,17 @@ export function NavBar() {
               </span>
             </Button>
           )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate({ to: "/settings" })}
+            className="gap-1.5 text-sm font-body text-muted-foreground hover:text-foreground"
+            data-ocid="nav.settings_button"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">Settings</span>
+          </Button>
         </nav>
       </div>
     </header>

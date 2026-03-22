@@ -1,10 +1,12 @@
 import { Footer } from "@/components/Footer";
 import { NavBar } from "@/components/NavBar";
 import { Toaster } from "@/components/ui/sonner";
+import { TypographyProvider } from "@/contexts/TypographyContext";
 import { useActor } from "@/hooks/useActor";
 import { useInitialize } from "@/hooks/useQueries";
 import { IndexPage } from "@/pages/IndexPage";
 import { NewPageView } from "@/pages/NewPageView";
+import { SettingsPage } from "@/pages/SettingsPage";
 import { TagIndexPage } from "@/pages/TagIndexPage";
 import { WikiPageView } from "@/pages/WikiPageView";
 import {
@@ -48,7 +50,7 @@ const indexRoute = createRoute({
 });
 const pageRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/page/$id",
+  path: "/page/$slug",
   component: WikiPageView,
 });
 const tagRoute = createRoute({
@@ -61,12 +63,18 @@ const newPageRoute = createRoute({
   path: "/new",
   component: NewPageView,
 });
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings",
+  component: SettingsPage,
+});
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   pageRoute,
   tagRoute,
   newPageRoute,
+  settingsRoute,
 ]);
 const router = createRouter({ routeTree });
 
@@ -78,9 +86,9 @@ declare module "@tanstack/react-router" {
 
 export default function App() {
   return (
-    <>
+    <TypographyProvider>
       <RouterProvider router={router} />
       <Toaster />
-    </>
+    </TypographyProvider>
   );
 }

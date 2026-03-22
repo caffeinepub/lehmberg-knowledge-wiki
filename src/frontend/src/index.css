@@ -7,44 +7,31 @@
 @layer base {
   :root {
     /* Parchment / warm earthy light theme */
-    --background: 0.97 0.015 80; /* warm off-white parchment */
-    --foreground: 0.22 0.03 60; /* dark warm brown */
-
+    --background: 0.97 0.015 80;
+    --foreground: 0.22 0.03 60;
     --card: 0.96 0.012 78;
     --card-foreground: 0.22 0.03 60;
-
     --popover: 0.97 0.012 78;
     --popover-foreground: 0.22 0.03 60;
-
-    --primary: 0.42 0.09 145; /* forest green */
+    --primary: 0.42 0.09 145;
     --primary-foreground: 0.97 0.01 80;
-
     --secondary: 0.91 0.025 75;
     --secondary-foreground: 0.28 0.04 60;
-
     --muted: 0.92 0.018 75;
     --muted-foreground: 0.52 0.04 65;
-
     --accent: 0.88 0.04 80;
     --accent-foreground: 0.28 0.04 60;
-
     --destructive: 0.52 0.2 25;
     --destructive-foreground: 0.97 0.01 80;
-
     --border: 0.84 0.025 72;
     --input: 0.84 0.025 72;
     --ring: 0.42 0.09 145;
-
     --radius: 0.375rem;
-
-    /* Chart */
     --chart-1: 0.52 0.15 145;
     --chart-2: 0.55 0.12 80;
     --chart-3: 0.48 0.1 200;
     --chart-4: 0.62 0.14 55;
     --chart-5: 0.45 0.12 300;
-
-    /* Sidebar */
     --sidebar: 0.95 0.015 78;
     --sidebar-foreground: 0.22 0.03 60;
     --sidebar-primary: 0.42 0.09 145;
@@ -53,6 +40,43 @@
     --sidebar-accent-foreground: 0.28 0.04 60;
     --sidebar-border: 0.84 0.025 72;
     --sidebar-ring: 0.42 0.09 145;
+
+    /* Typography CSS variables (overridden at runtime by TypographyContext) */
+    --wt-title-font: "Instrument Serif", Georgia, serif;
+    --wt-title-size: 40px;
+    --wt-title-weight: 400;
+    --wt-title-style: normal;
+    --wt-title-deco: none;
+
+    --wt-section-font: "Instrument Serif", Georgia, serif;
+    --wt-section-size: 24px;
+    --wt-section-weight: 400;
+    --wt-section-style: normal;
+    --wt-section-deco: none;
+
+    --wt-body-font: "Crimson Pro", Georgia, serif;
+    --wt-body-size: 17px;
+    --wt-body-weight: 400;
+    --wt-body-style: normal;
+    --wt-body-deco: none;
+
+    --wp-title-font: "Instrument Serif", Georgia, serif;
+    --wp-title-size: 20px;
+    --wp-title-weight: 400;
+    --wp-title-style: normal;
+    --wp-title-deco: none;
+
+    --wp-section-font: "Instrument Serif", Georgia, serif;
+    --wp-section-size: 15px;
+    --wp-section-weight: 400;
+    --wp-section-style: normal;
+    --wp-section-deco: none;
+
+    --wp-body-font: "Crimson Pro", Georgia, serif;
+    --wp-body-size: 14px;
+    --wp-body-weight: 400;
+    --wp-body-style: normal;
+    --wp-body-deco: none;
   }
 
   * {
@@ -87,6 +111,56 @@
   .font-body {
     font-family: "Crimson Pro", Georgia, serif;
   }
+}
+
+/* ---- Typography setting classes ---- */
+.wiki-entry-title {
+  font-family: var(--wt-title-font) !important;
+  font-size: var(--wt-title-size) !important;
+  font-weight: var(--wt-title-weight) !important;
+  font-style: var(--wt-title-style) !important;
+  text-decoration: var(--wt-title-deco) !important;
+  line-height: 1.15;
+}
+
+.wiki-entry-section {
+  font-family: var(--wt-section-font) !important;
+  font-size: var(--wt-section-size) !important;
+  font-weight: var(--wt-section-weight) !important;
+  font-style: var(--wt-section-style) !important;
+  text-decoration: var(--wt-section-deco) !important;
+}
+
+.wiki-entry-body {
+  font-family: var(--wt-body-font) !important;
+  font-size: var(--wt-body-size) !important;
+  font-weight: var(--wt-body-weight) !important;
+  font-style: var(--wt-body-style) !important;
+  text-decoration: var(--wt-body-deco) !important;
+}
+
+.wiki-preview-title {
+  font-family: var(--wp-title-font) !important;
+  font-size: var(--wp-title-size) !important;
+  font-weight: var(--wp-title-weight) !important;
+  font-style: var(--wp-title-style) !important;
+  text-decoration: var(--wp-title-deco) !important;
+}
+
+.wiki-preview-section {
+  font-family: var(--wp-section-font) !important;
+  font-size: var(--wp-section-size) !important;
+  font-weight: var(--wp-section-weight) !important;
+  font-style: var(--wp-section-style) !important;
+  text-decoration: var(--wp-section-deco) !important;
+}
+
+.wiki-preview-body {
+  font-family: var(--wp-body-font) !important;
+  font-size: var(--wp-body-size) !important;
+  font-weight: var(--wp-body-weight) !important;
+  font-style: var(--wp-body-style) !important;
+  text-decoration: var(--wp-body-deco) !important;
 }
 
 /* ---- Quill viewer styles ---- */

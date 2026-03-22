@@ -1,6 +1,7 @@
 import { TagBadge } from "@/components/TagBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGetPagesByTag } from "@/hooks/useQueries";
+import { titleToSlug } from "@/lib/slug";
 import { stripToPlainText } from "@/lib/stripToPlainText";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { ArrowLeft, Tag } from "lucide-react";
@@ -20,8 +21,7 @@ export function TagIndexPage() {
         onClick={() => navigate({ to: "/" })}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground font-body mb-8 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        All entries
+        <ArrowLeft className="w-4 h-4" /> All entries
       </button>
 
       <div className="mb-8 flex items-center gap-3">
@@ -88,15 +88,15 @@ export function TagIndexPage() {
                 data-ocid={`pages.item.${index + 1}`}
               >
                 <Link
-                  to="/page/$id"
-                  params={{ id: page.id.toString() }}
+                  to="/page/$slug"
+                  params={{ slug: titleToSlug(page.title) }}
                   className="block p-5 border border-border rounded-lg bg-card hover:border-primary/50 hover:shadow-parchment transition-all duration-200 group"
                 >
-                  <h2 className="font-serif text-xl text-foreground group-hover:text-primary transition-colors mb-2">
+                  <h2 className="wiki-preview-title text-foreground group-hover:text-primary transition-colors mb-2">
                     {page.title}
                   </h2>
                   {page.body && (
-                    <p className="text-muted-foreground font-body text-sm line-clamp-2 mb-3">
+                    <p className="wiki-preview-body text-muted-foreground line-clamp-2 mb-3">
                       {stripToPlainText(page.body)}
                     </p>
                   )}

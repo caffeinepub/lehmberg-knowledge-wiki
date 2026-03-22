@@ -7,6 +7,7 @@ import { useActor } from "@/hooks/useActor";
 import { useAutoSaveDraft } from "@/hooks/useAutoSaveDraft";
 import { useInternetIdentity } from "@/hooks/useInternetIdentity";
 import { useCreatePage, useDeleteDraft, useGetDraft } from "@/hooks/useQueries";
+import { titleToSlug } from "@/lib/slug";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Loader2, Plus, Save, X } from "lucide-react";
 import { motion } from "motion/react";
@@ -61,7 +62,6 @@ export function NewPageView() {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const restoredRef = useRef(false);
 
-  // Load draft on mount
   const { data: draft, isSuccess: draftLoaded } = useGetDraft("new");
 
   useEffect(() => {
@@ -130,7 +130,7 @@ export function NewPageView() {
     setTitleError("");
     const parsedTags = parseTags(tags);
     try {
-      const newId = await createPage.mutateAsync({
+      await createPage.mutateAsync({
         title: title.trim(),
         body,
         tags: parsedTags,
@@ -138,13 +138,15 @@ export function NewPageView() {
       try {
         await deleteDraft.mutateAsync("new");
       } catch {
-        // silently ignore
+        /* ignore */
       }
       toast.success("Page created");
-      navigate({ to: "/page/$id", params: { id: newId.toString() } });
+      navigate({
+        to: "/page/$slug",
+        params: { slug: titleToSlug(title.trim()) },
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("Failed to create page:", msg);
       toast.error(`Failed to create page: ${msg}`);
     }
   };
@@ -156,8 +158,7 @@ export function NewPageView() {
         onClick={() => navigate({ to: "/" })}
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground font-body mb-8 transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        All entries
+        <ArrowLeft className="w-4 h-4" /> All entries
       </button>
 
       <h1 className="font-serif text-4xl text-foreground mb-8">New Entry</h1>
@@ -167,8 +168,7 @@ export function NewPageView() {
           className="flex items-center gap-2 text-sm text-muted-foreground mb-4"
           data-ocid="new_page.loading_state"
         >
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Connecting to backend...
+          <Loader2 className="w-4 h-4 animate-spin" /> Connecting to backend...
         </div>
       )}
 
@@ -205,7 +205,6 @@ export function NewPageView() {
           )}
         </div>
 
-        {/* Sections */}
         <div className="space-y-1">
           <Label className="font-body text-sm text-muted-foreground mb-1.5 block">
             Content
@@ -242,10 +241,8 @@ export function NewPageView() {
                   type="button"
                   onClick={() => addSection(idx)}
                   className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs text-muted-foreground border border-dashed border-border hover:border-primary/50 hover:text-primary bg-transparent hover:bg-primary/5 transition-all"
-                  title="Add section below"
                 >
-                  <Plus className="w-3 h-3" />
-                  Add section
+                  <Plus className="w-3 h-3" /> Add section
                 </button>
               </div>
             </div>

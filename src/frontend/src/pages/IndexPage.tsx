@@ -1,17 +1,38 @@
-import { RichPreview } from "@/components/RichPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useListPages } from "@/hooks/useQueries";
 import { toRichPreviewHtml } from "@/lib/richPreview";
+import { titleToSlug } from "@/lib/slug";
 import { Link } from "@tanstack/react-router";
 import { Sprout } from "lucide-react";
 import { motion } from "motion/react";
+
+const SECTION_DELIMITER = "\n---\n";
+const NAME_BODY_DELIMITER = "\n:::::\n";
+
+const previewTagStyle: React.CSSProperties = {
+  fontFamily: "var(--wp-tags-font)",
+  fontSize: "var(--wp-tags-size)" as any,
+  fontWeight: "var(--wp-tags-weight)" as any,
+  fontStyle: "var(--wp-tags-style)" as any,
+  textDecoration: "var(--wp-tags-deco)" as any,
+};
+
+function parseSectionString(raw: string): { name: string; text: string } {
+  const delimIdx = raw.indexOf(NAME_BODY_DELIMITER);
+  if (delimIdx !== -1) {
+    return {
+      name: raw.slice(0, delimIdx),
+      text: raw.slice(delimIdx + NAME_BODY_DELIMITER.length),
+    };
+  }
+  return { name: "", text: raw };
+}
 
 export function IndexPage() {
   const { data: pages, isLoading, isError } = useListPages();
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 page-enter">
-      {/* Hero banner */}
       <div className="mb-10 overflow-hidden rounded-lg">
         <img
           src="/assets/uploads/204351-678x450-Cottonwood-Tree-in-Autumn-1.jpg"
@@ -59,44 +80,72 @@ export function IndexPage() {
 
       {!isLoading && !isError && pages && pages.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2" data-ocid="pages.list">
-          {pages.map((page, index) => (
-            <motion.div
-              key={page.id.toString()}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.04, duration: 0.25 }}
-              data-ocid={`pages.item.${index + 1}`}
-            >
-              <Link
-                to="/page/$id"
-                params={{ id: page.id.toString() }}
-                className="block p-5 border border-border rounded-lg bg-card hover:border-primary/50 hover:shadow-parchment transition-all duration-200 group"
+          {pages.map((page, index) => {
+            const sections = page.body
+              .split(SECTION_DELIMITER)
+              .map(parseSectionString);
+            return (
+              <motion.div
+                key={page.id.toString()}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04, duration: 0.25 }}
+                data-ocid={`pages.item.${index + 1}`}
               >
-                <h2 className="font-serif text-xl text-foreground group-hover:text-primary transition-colors mb-2">
-                  {page.title}
-                </h2>
-                {page.body && (
-                  <RichPreview
-                    html={toRichPreviewHtml(page.body)}
-                    className="text-muted-foreground font-body text-sm mb-3"
-                  />
-                )}
-                {page.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {page.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="tag-badge"
-                        style={{ pointerEvents: "none" }}
-                      >
-                        {tag.startsWith("#") ? tag : `#${tag}`}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </Link>
-            </motion.div>
-          ))}
+                <Link
+                  to="/page/$slug"
+                  params={{ slug: titleToSlug(page.title) }}
+                  className="block p-5 border border-border rounded-lg bg-card hover:border-primary/50 hover:shadow-parchment transition-all duration-200 group"
+                >
+                  <h2
+                    className="wiki-preview-title text-foreground group-hover:text-primary transition-colors"
+                    style={{ marginBottom: "var(--wp-title-section-gap)" }}
+                  >
+                    {page.title}
+                  </h2>
+                  {page.body && (
+                    <div className="text-muted-foreground mb-3 line-clamp-3">
+                      {sections.map((sec, si) => (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: preview list
+                        <span key={si}>
+                          {sec.name && (
+                            <span
+                              className="wiki-preview-section block"
+                              style={{
+                                marginBottom: "var(--wp-section-body-gap)",
+                              }}
+                            >
+                              {sec.name}
+                            </span>
+                          )}
+                          <span
+                            className="wiki-preview-body block"
+                            // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitised preview html
+                            dangerouslySetInnerHTML={{
+                              __html: toRichPreviewHtml(sec.text),
+                            }}
+                          />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {page.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {page.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="tag-badge"
+                          style={{ ...previewTagStyle, pointerEvents: "none" }}
+                        >
+                          {tag.startsWith("#") ? tag : `#${tag}`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
       )}
     </main>

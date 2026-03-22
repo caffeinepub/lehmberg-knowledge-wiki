@@ -23,10 +23,11 @@ import {
   useDeleteDraft,
   useDeletePage,
   useGetDraft,
-  useGetPage,
+  useGetPageByTitle,
   useListPages,
   useUpdatePage,
 } from "@/hooks/useQueries";
+import { slugToTitle, titleToSlug } from "@/lib/slug";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowLeft,
@@ -80,14 +81,22 @@ function bodyToSections(body: string): Section[] {
   }));
 }
 
+const entryTagStyle: React.CSSProperties = {
+  fontFamily: "var(--wt-tags-font)",
+  fontSize: "var(--wt-tags-size)" as any,
+  fontWeight: "var(--wt-tags-weight)" as any,
+  fontStyle: "var(--wt-tags-style)" as any,
+  textDecoration: "var(--wt-tags-deco)" as any,
+};
+
 export function WikiPageView() {
-  const { id } = useParams({ from: "/page/$id" });
+  const { slug } = useParams({ from: "/page/$slug" });
   const navigate = useNavigate();
-  const pageId = BigInt(id);
+  const pageTitle = slugToTitle(decodeURIComponent(slug));
   const { identity } = useInternetIdentity();
   const isAuthenticated = !!identity && !identity.getPrincipal().isAnonymous();
 
-  const { data: page, isLoading, isError } = useGetPage(pageId);
+  const { data: page, isLoading, isError } = useGetPageByTitle(pageTitle);
   const { data: allPages = [] } = useListPages();
 
   const updatePage = useUpdatePage();
@@ -101,7 +110,7 @@ export function WikiPageView() {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const editMountedRef = useRef(false);
 
-  const draftKey = pageId.toString();
+  const draftKey = page ? page.id.toString() : slug;
   const { data: draft, isSuccess: draftLoaded } = useGetDraft(draftKey);
 
   const handleEditStart = () => {
@@ -123,7 +132,6 @@ export function WikiPageView() {
     }
   };
 
-  // When editing starts and draft is loaded, optionally restore newer draft
   useEffect(() => {
     if (!isEditing || !draftLoaded || editMountedRef.current) return;
     editMountedRef.current = true;
@@ -175,6 +183,10 @@ export function WikiPageView() {
       editMountedRef.current = false;
       setIsEditing(false);
       toast.success("Page saved");
+      const newSlug = titleToSlug(editTitle.trim());
+      if (newSlug !== slug) {
+        navigate({ to: "/page/$slug", params: { slug: newSlug } });
+      }
     } catch {
       toast.error("Failed to save page");
     }
@@ -299,7 +311,6 @@ export function WikiPageView() {
             />
           </div>
 
-          {/* Sections */}
           <div className="space-y-1">
             <Label className="font-body text-sm text-muted-foreground mb-1.5 block">
               Content
@@ -338,10 +349,8 @@ export function WikiPageView() {
                     type="button"
                     onClick={() => addSection(idx)}
                     className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs text-muted-foreground border border-dashed border-border hover:border-primary/50 hover:text-primary bg-transparent hover:bg-primary/5 transition-all"
-                    title="Add section below"
                   >
-                    <Plus className="w-3 h-3" />
-                    Add section
+                    <Plus className="w-3 h-3" /> Add section
                   </button>
                 </div>
               </div>
@@ -413,8 +422,11 @@ export function WikiPageView() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
         >
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <h1 className="font-serif text-4xl sm:text-5xl text-foreground leading-tight">
+          <div
+            className="flex items-start justify-between gap-4"
+            style={{ marginBottom: "var(--wt-title-section-gap)" }}
+          >
+            <h1 className="wiki-entry-title text-foreground leading-tight">
               {page.title}
             </h1>
             <div className="flex items-center gap-2 shrink-0 mt-1.5">
@@ -479,13 +491,17 @@ export function WikiPageView() {
               )}
             </div>
           </div>
+
           <div className="mb-8 space-y-6">
             {viewSections.map((section, idx) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: view-only list
               <div key={idx}>
                 {idx > 0 && <hr className="border-border mb-6" />}
                 {section.name && (
-                  <h2 className="font-serif text-2xl text-foreground mb-4">
+                  <h2
+                    className="wiki-entry-section text-foreground block"
+                    style={{ marginBottom: "var(--wt-section-body-gap)" }}
+                  >
                     {section.name}
                   </h2>
                 )}
@@ -493,6 +509,7 @@ export function WikiPageView() {
               </div>
             ))}
           </div>
+
           {page.tags.length > 0 && (
             <div className="border-t border-border pt-6">
               <p className="text-xs text-muted-foreground font-body mb-3 uppercase tracking-widest">
@@ -503,6 +520,7 @@ export function WikiPageView() {
                   <TagBadge
                     key={tag}
                     tag={tag}
+                    style={entryTagStyle}
                     data-ocid={`tag.item.${i + 1}`}
                   />
                 ))}
