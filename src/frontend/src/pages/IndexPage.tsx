@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { useBannerUrl } from "@/hooks/useBannerUrl";
 import { useListPages } from "@/hooks/useQueries";
 import { toRichPreviewHtml } from "@/lib/richPreview";
 import { titleToSlug } from "@/lib/slug";
@@ -28,14 +29,53 @@ function parseSectionString(raw: string): { name: string; text: string } {
   return { name: "", text: raw };
 }
 
+function truncateBodyHtml(raw: string, maxChars: number): string {
+  let visibleCount = 0;
+  let inTag = false;
+  let i = 0;
+
+  while (i < raw.length) {
+    if (raw[i] === "<") {
+      inTag = true;
+      i++;
+      continue;
+    }
+    if (raw[i] === ">") {
+      inTag = false;
+      i++;
+      continue;
+    }
+    if (!inTag) {
+      visibleCount++;
+      if (visibleCount >= maxChars) {
+        // Trim back to last word boundary
+        let cutPoint = i + 1;
+        while (
+          cutPoint > 0 &&
+          raw[cutPoint - 1] !== " " &&
+          raw[cutPoint - 1] !== "\n"
+        ) {
+          cutPoint--;
+        }
+        if (cutPoint <= 0) cutPoint = i + 1;
+        return `${raw.slice(0, cutPoint).trimEnd()}\u2026`;
+      }
+    }
+    i++;
+  }
+
+  return raw;
+}
+
 export function IndexPage() {
   const { data: pages, isLoading, isError } = useListPages();
+  const [bannerUrl] = useBannerUrl();
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 page-enter">
       <div className="mb-10 overflow-hidden rounded-lg">
         <img
-          src="/assets/uploads/204351-678x450-Cottonwood-Tree-in-Autumn-1.jpg"
+          src={bannerUrl}
           alt="Lehmberg farmstead landscape"
           className="w-full h-32 sm:h-48 object-cover"
         />
@@ -104,7 +144,7 @@ export function IndexPage() {
                     {page.title}
                   </h2>
                   {page.body && (
-                    <div className="text-muted-foreground mb-3 line-clamp-3">
+                    <div className="text-muted-foreground mb-3">
                       {sections.map((sec, si) => (
                         // biome-ignore lint/suspicious/noArrayIndexKey: preview list
                         <span key={si}>
@@ -122,7 +162,9 @@ export function IndexPage() {
                             className="wiki-preview-body block"
                             // biome-ignore lint/security/noDangerouslySetInnerHtml: sanitised preview html
                             dangerouslySetInnerHTML={{
-                              __html: toRichPreviewHtml(sec.text),
+                              __html: toRichPreviewHtml(
+                                truncateBodyHtml(sec.text, 200),
+                              ),
                             }}
                           />
                         </span>

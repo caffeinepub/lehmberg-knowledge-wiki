@@ -17,12 +17,18 @@ export interface TypographySettings {
   previewSection: TextStyle;
   previewBody: TextStyle;
   previewTags: TextStyle;
-  // Entry view spacing (px)
-  entryTitleToSectionGap: number;
-  entrySectionToBodyGap: number;
-  // Preview card spacing (px)
-  previewTitleToSectionGap: number;
-  previewSectionToBodyGap: number;
+  // Per-element gaps (space ABOVE each element), px
+  entryTitleGap: number;
+  entrySectionGap: number;
+  entryBodyGap: number;
+  entryTagsGap: number;
+  previewTitleGap: number;
+  previewSectionGap: number;
+  previewBodyGap: number;
+  previewTagsGap: number;
+  // Line-height for body text (unitless)
+  entryBodyLineHeight: number;
+  previewBodyLineHeight: number;
 }
 
 export const FONT_OPTIONS = [
@@ -92,10 +98,18 @@ export const DEFAULT_SETTINGS: TypographySettings = {
     italic: false,
     underline: false,
   },
-  entryTitleToSectionGap: 24,
-  entrySectionToBodyGap: 8,
-  previewTitleToSectionGap: 8,
-  previewSectionToBodyGap: 4,
+  // All gaps default to 0
+  entryTitleGap: 0,
+  entrySectionGap: 0,
+  entryBodyGap: 0,
+  entryTagsGap: 0,
+  previewTitleGap: 0,
+  previewSectionGap: 0,
+  previewBodyGap: 0,
+  previewTagsGap: 0,
+  // Default line-heights
+  entryBodyLineHeight: 1.5,
+  previewBodyLineHeight: 1.5,
 };
 
 const STORAGE_KEY = "wiki-typography-settings";
@@ -131,17 +145,14 @@ export function applySettingsToDom(s: TypographySettings): void {
   set("wp-section", s.previewSection);
   set("wp-body", s.previewBody);
   set("wp-tags", s.previewTags);
-  r.style.setProperty(
-    "--wt-title-section-gap",
-    `${s.entryTitleToSectionGap}px`,
-  );
-  r.style.setProperty("--wt-section-body-gap", `${s.entrySectionToBodyGap}px`);
-  r.style.setProperty(
-    "--wp-title-section-gap",
-    `${s.previewTitleToSectionGap}px`,
-  );
-  r.style.setProperty(
-    "--wp-section-body-gap",
-    `${s.previewSectionToBodyGap}px`,
-  );
+  r.style.setProperty("--wt-title-gap", `${s.entryTitleGap}px`);
+  r.style.setProperty("--wt-section-gap", `${s.entrySectionGap}px`);
+  r.style.setProperty("--wt-body-gap", `${s.entryBodyGap}px`);
+  r.style.setProperty("--wt-tags-gap", `${s.entryTagsGap}px`);
+  r.style.setProperty("--wp-title-gap", `${s.previewTitleGap}px`);
+  r.style.setProperty("--wp-section-gap", `${s.previewSectionGap}px`);
+  r.style.setProperty("--wp-body-gap", `${s.previewBodyGap}px`);
+  r.style.setProperty("--wp-tags-gap", `${s.previewTagsGap}px`);
+  r.style.setProperty("--wt-body-line-height", `${s.entryBodyLineHeight}`);
+  r.style.setProperty("--wp-body-line-height", `${s.previewBodyLineHeight}`);
 }
